@@ -1,0 +1,578 @@
+// 全局通用标题栏
+import { BaseWindow, BaseRectangle, GlobalBasicSettings, ContentType, LogEntry } from "../config/global.slint";
+import { HorizontalBox, VerticalBox, ListView, Button } from "std-widgets.slint";
+import { LogViewer } from "Log.slint";
+import { theme-dark, theme-ligth } from "../config/theme.slint";
+
+// 菜单按钮组件
+export component Menu inherits Rectangle {
+    callback bind_handle(); // 绑定点击事件回调
+    property <brush> bg-pressed-hashover: #48494c; // 鼠标悬停或按下时的背景颜色
+    in-out property <string> menu_text:@tr("Gtrat2"); // 菜单文本
+    height: 30px; // 组件高度
+    background: transparent; // 背景透明
+    preferred-width: menu1_text.preferred-width + 10px; // 组件首选宽度
+    Rectangle {
+        background  : menu1_touch.pressed ? bg-pressed-hashover
+                    : menu1_touch.has-hover? bg-pressed-hashover 
+                    : transparent; // 根据触摸状态设置背景颜色
+        width: parent.width;
+        height: parent.height;
+
+        menu1_text := Text {
+            text: menu_text; // 显示菜单文本
+            font-family: GlobalBasicSettings.default-font-family; // 字体
+            font-size: GlobalBasicSettings.default-font-size; // 字体大小
+        }
+    }
+    menu1_touch := TouchArea {   
+        clicked => {
+            bind_handle() // 点击时触发回调
+        }
+    }
+}
+
+// 标题栏组件
+export component titlemenu inherits Rectangle {
+    callback closewindow(); // 关闭窗口回调
+    callback maximize(); // 最大化窗口回调
+    callback minimize(); // 最小化窗口回调
+    in-out property <image> title-icons:GlobalBasicSettings.icon-image; // 标题栏图标
+    border-top-left-radius: GlobalBasicSettings.border-radius; // 左上角圆角
+    border-top-right-radius: GlobalBasicSettings.border-radius; // 右上角圆角
+    padding: 0px; // 内边距
+    background: GlobalBasicSettings.theme-type.titlemenu-bg; // 背景颜色
+    HorizontalLayout {
+        padding: 0px;
+        HorizontalBox {
+            height: 35px;
+            alignment: start;
+            padding: 0px;
+            spacing: 5px;
+            // 显示logo
+            Rectangle {
+                background: transparent;
+                width: 30px;
+                height: 30px;
+                Image {
+                    source: title-icons; // 图标来源
+                    width: 20px;
+                    height: 20px;
+                }
+            }
+            @children // 子组件
+        }
+
+        HorizontalBox {
+            height: 35px;
+            alignment: end;
+            padding: 0px;
+            spacing: 0px;
+            // 切换主题按钮
+            Rectangle {
+                background: ta_theme.pressed ? GlobalBasicSettings.theme-type.title-bg-pressed-hashover
+                          : ta_theme.has-hover? GlobalBasicSettings.theme-type.title-bg-pressed-hashover
+                          : transparent; // 根据触摸状态设置背景颜色
+                width: 30px;
+                height: 30px;
+                Image {
+                    horizontal-alignment: center;
+                    source: GlobalBasicSettings.theme-type.ligth-dark; // 主题切换图标
+                    width: 14px;
+                    height: 14px;
+                }
+                ta_theme:= TouchArea {
+                    clicked => {
+                        // 切换主题
+                        if (GlobalBasicSettings.theme-type == theme-ligth.default_theme) {
+                            GlobalBasicSettings.theme-type = theme-dark.default_theme;
+                        } else {
+                            GlobalBasicSettings.theme-type = theme-ligth.default_theme;
+                        }
+                    }
+                } 
+            }
+            // 最小化按钮
+            Rectangle {
+                background: ta_min.pressed ? GlobalBasicSettings.theme-type.title-bg-pressed-hashover
+                          : ta_min.has-hover? GlobalBasicSettings.theme-type.title-bg-pressed-hashover
+                          : transparent; // 根据触摸状态设置背景颜色
+                width: 30px;
+                height: 30px;
+                Image {
+                    horizontal-alignment: center;
+                    source: GlobalBasicSettings.theme-type.icon-min; // 最小化图标
+                    width: 14px;
+                    height: 14px;
+                }
+                ta_min:= TouchArea {
+                    clicked => {
+                        root.minimize(); // 点击时最小化窗口
+                    }
+                } 
+            }
+    
+            // 最大化按钮
+            Rectangle {
+                background: ta_max.pressed ? GlobalBasicSettings.theme-type.title-bg-pressed-hashover 
+                          : ta_max.has-hover? GlobalBasicSettings.theme-type.title-bg-pressed-hashover
+                          : transparent; // 根据触摸状态设置背景颜色
+                width: 30px;
+                height: 30px;
+                Image {
+                    horizontal-alignment: center;
+                    source: GlobalBasicSettings.theme-type.icon-max; // 最大化图标
+                    width: 14px;
+                    height: 14px;
+                }
+                ta_max:= TouchArea {
+                    clicked => {
+                        root.maximize(); // 点击时最大化窗口
+                    }
+                } 
+            }
+    
+            // 关闭按钮
+            Rectangle {
+                border-top-right-radius: GlobalBasicSettings.border-radius; // 右上角圆角
+                background: ta.pressed ? #c42b1c
+                          : ta.has-hover? #c42b1c 
+                          : transparent; // 根据触摸状态设置背景颜色
+                width: 30px;
+                height: 30px;
+                Image {
+                    horizontal-alignment: center;
+                    source: GlobalBasicSettings.theme-type.icon-close; // 关闭图标
+                    width: 14px;
+                    height: 14px;
+                }
+                ta:= TouchArea {
+                    clicked => {
+                        root.closewindow() // 点击时关闭窗口
+                    }
+                } 
+            }
+        }
+    }  
+}
+
+// 水平按钮组件
+export component HButton {
+    in-out property <bool> active: false; // 按钮是否激活
+    in-out property <bool> button_delete_icon: false; // 是否显示删除图标
+    in-out property <bool> is_event_log: false; // 是否是事件日志按钮
+    in-out property <string> button_name; // 按钮名称
+    callback button_active; // 按钮激活回调
+    width: text.preferred-width+40px; // 按钮宽度
+    in-out  property <bool> is_active:active; // 按钮是否激活
+    VerticalLayout {
+        Rectangle {
+            max-width: 150px;
+            border-radius: 5px;
+            background: button_ta.has-hover? 
+                @linear-gradient(180deg, #323234, #2D2D2F, #272729):
+                @linear-gradient(
+                    180deg,
+                    #2F2F31 0%,
+                    #2B2B2D 30%,
+                    #272729 70%,
+                    #262628 100%
+                ); // 根据触摸状态设置背景渐变
+            
+            button_ta := TouchArea {
+                clicked => {
+                    if (self.pressed) {
+                        // 点击时触发回调，由父组件处理活跃状态
+                        button_active();
+                    }
+                }
+            }
+
+            HorizontalBox {
+                text := Text {
+                    vertical-alignment: center;
+                    text: button_name; // 按钮文本
+                    font-family: GlobalBasicSettings.default_font_family; // 字体
+                    font-size: 13px; // 字体大小
+                    color: #E5E5E5; // 文本颜色
+                }
+                if (!button_delete_icon): Rectangle {
+                    width: 20px;
+                    Image {
+                        vertical-alignment: center;
+                        source: button_delete_ta.has-hover? 
+                            @image-url("../resouces/icons/button_delete_hover.png"): 
+                            @image-url("../resouces/icons/button_delete.png"); // 删除图标
+                        width: 15px;
+                        height: 15px;
+                    }
+                    button_delete_ta := TouchArea {
+                        clicked => {
+                            GlobalBasicSettings.remove_tab(button_name); // 点击时删除标签
+                        }
+                    }
+                }
+            }
+            height: 25px;
+        }
+
+        Rectangle {
+            height: 2px;
+            background: is_active ? 
+                @linear-gradient(
+                    90deg,
+                    #4A90E200,
+                    #4A90E2 20%,
+                    #4A90E2 80%,
+                    #4A90E200
+                ): transparent; // 激活时显示底部渐变条
+        }
+    }
+}
+
+// 水平按钮内容组件
+export component hbutton_content inherits Rectangle {
+    background: transparent; // 背景透明
+    border-top-left-radius: 4px; // 左上角圆角
+    border-top-right-radius: 4px; // 右上角圆角
+    border-bottom-left-radius: 4px; // 左下角圆角
+    border-bottom-right-radius: 10px; // 右下角圆角
+    drop-shadow-color: transparent; // 阴影颜色
+    drop-shadow-offset-x: 0px; // 阴影X偏移
+    drop-shadow-offset-y: 1px; // 阴影Y偏移
+    drop-shadow-blur: 2px; // 阴影模糊度
+    @children // 子组件
+}
+
+// 可调整面板组件
+export component ResizablePane inherits Rectangle {
+    in-out  property <ContentType> contenttype: ContentType.Home; // 内容类型
+    out property <length> delta; // 调整高度时的变化量
+    out property <length> init__cache: contenttype != ContentType.Home&& is_fullscreen == true ? 950px
+                                    : contenttype != ContentType.Home&& is_fullscreen != true ?  self.preferred-height*0.97
+                                    : self.preferred-height*0.97; // 初始高度缓存
+    out property <length> lower_h:830px - init__cache - drvider.height; // 下部内容高度
+    in-out property <bool> is_fullscreen; // 是否全屏
+    in-out property <bool> flag_min; // 最小化标志
+    in-out property <int> flag_num:1; // 标志位
+    out property <length> save_upper:flag_num ==0 &&is_fullscreen != true ? self.preferred-height*0.97:init__cache; // 保存上部高度
+    out property <length> save_lower:flag_num  ==0 &&is_fullscreen != true ? 830px - save_upper - drvider.height:lower_h; // 保存下部高度
+    property <length> upper_height: flag_min&&is_fullscreen != true  ? save_upper :init__cache ; // 上部内容高度
+    property <length> lower_height: flag_min&&is_fullscreen != true ? save_lower :lower_h ; // 下部内容高度
+    preferred-height:830px; // 首选高度
+    background: transparent; // 背景透明
+    VerticalLayout {
+        padding: 0px;
+        preferred-height: 830px;
+        spacing: 0px;
+        upper_content := Rectangle {
+            height: upper_height;
+            background: GlobalBasicSettings.theme-type.resizablepane-bg; // 上部内容背景
+            VerticalBox {
+                padding: 0px;
+                spacing: 0px;
+                Rectangle {
+                    background: GlobalBasicSettings.theme-type.resizablepane-content; // 内容背景
+                    border-radius: 5px; // 圆角
+                    @children // 子组件
+                }
+                
+            }
+        }
+        drvider :=Rectangle {
+            background : GlobalBasicSettings.theme-type.resizablepane-bg; // 分隔条背景
+            height  :3px; // 分隔条高度
+            border-bottom-left-radius: 10px; // 左下角圆角
+            border-bottom-right-radius: 10px; // 右下角圆角
+            border-width: 3px; // 边框宽度
+            border-color: drvider_touch.has-hover ? @linear-gradient(
+                        90deg,
+                        #27272900,      // 起始端完全透明
+                        #35353730 15%,  // 逐渐显现
+                        #353537 30%,    // 中间部分显示完整颜色
+                        #353537 70%,    // 保持中间部分
+                        #35353730 85%,  // 开始淡出
+                        #27272900       // 结束端完全透明
+                        )
+                        : GlobalBasicSettings.theme-type.resizablepane-bg; // 根据触摸状态设置边框颜色
+
+            drvider_touch := TouchArea {
+                moved => {
+                        if (self.pressed && self.has-hover) {
+                            // 拖动分隔条时调整上下部内容高度
+                            delta = drvider_touch.mouse-y - drvider_touch.pressed-y;
+                            init__cache = drvider.y + delta;
+                            flag_num =1;
+                            lower_h = root.preferred-height - init__cache - drvider.height;
+                            if (init__cache <= 30px) {
+                                init__cache = 32px;
+                            }
+
+                            if (is_fullscreen) {
+                                flag_num =0;
+                                flag_min = true;
+                                if (init__cache  >= 750px) {
+                                    init__cache =  root.height*0.97;  
+                                }
+                            }
+                            else  {
+                                if(lower_h <=30px && init__cache >=750px  ) {
+                                    init__cache = root.preferred-height*0.97;
+                                    
+                                }
+                                
+                            }
+                    }
+
+                }
+
+            }
+        }
+
+        lower_content := Rectangle {
+            background: transparent; // 下部内容背景透明
+            preferred-height: lower_height; // 下部内容高度
+            VerticalBox {
+                spacing: 0px;
+                padding: 0px;
+                Rectangle {
+                    border-bottom-right-radius: 10px; // 右下角圆角
+                    background: GlobalBasicSettings.theme-type.sidebar_bg; // 背景颜色
+                    if ((root.contenttype == ContentType.Home || root.contenttype == ContentType.None) && lower_height>35px ) : Rectangle {
+                        border-radius: 8px; // 圆角
+                        border-width: 1px; // 边框宽度
+                        border-color: #2A2A2C; // 边框颜色
+                        VerticalLayout {
+                            min-height: 0mm;
+                            HorizontalLayout {
+                                padding: 0px;
+                                spacing: 10px;
+                                x:10px;
+                                max-height: 35px;
+                                for hb_name[index] in GlobalBasicSettings.visible_tabs: 
+                                        Rectangle {
+                                        visible: true;
+                                        width: hb.width;
+                                        hb:= HButton {
+                                            active: hb_name == GlobalBasicSettings.active_tab; // 按钮是否激活
+                                            button_name: hb_name; // 按钮名称
+                                            is_event_log: hb_name == "Event Log"; // 是否是事件日志按钮
+                                            button_delete_icon: self.is_event_log; // 是否显示删除图标
+                                            button_active => {
+                                                GlobalBasicSettings.active_tab = hb_name; // 点击时激活标签
+                                            }
+                                        }
+                                    }
+                            }
+                            hcontent :=Rectangle {
+                                background: transparent; // 内容背景透明
+                                if (GlobalBasicSettings.active_tab == "Payload Control") : hbutton_content{
+                                    Text {text:"Payload Control";} // 显示Payload Control内容
+                                }
+                                if (GlobalBasicSettings.active_tab == "Start Http_Proxy") : hbutton_content{
+                                    Button {
+                                        text: "start proxy"; // 显示启动代理按钮
+                                        clicked => {
+                                            GlobalBasicSettings.handle_event(); // 点击时处理事件
+                                        }
+                                    }
+                                }
+                                if (GlobalBasicSettings.active_tab == "Event Log") : hbutton_content{
+                                    property <[LogEntry]> sample-logs :GlobalBasicSettings.logs; // 日志条目
+                                    LogViewer {
+                                        logs: sample-logs; // 显示日志查看器
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ((root.contenttype == ContentType.Home || root.contenttype == ContentType.None) && lower_height<=35px ) :Rectangle {
+                        Image {
+                            height: 25px;
+                            source: GlobalBasicSettings.theme-type.icon-lower-bar; // 显示下部栏图标
+                        }
+                    }
+                }
+
+            }
+            
+        }
+    }
+}
+
+// 基础可调整面板组件
+export component BaseResizablePane inherits Rectangle {
+    preferred-height:830px; // 首选高度
+    background: transparent; // 背景透明
+    VerticalLayout {
+        padding: 0px;
+        preferred-height: 830px;
+        spacing: 0px;
+        upper_content := Rectangle {
+            background: GlobalBasicSettings.theme-type.resizablepane-bg; // 上部内容背景
+            border-bottom-right-radius: 10px; // 右下角圆角
+            VerticalBox {
+                Rectangle {
+                    background: GlobalBasicSettings.theme-type.resizablepane-content; // 内容背景
+                    border-radius: 5px; // 圆角
+                    @children // 子组件
+                }
+                
+            }
+        }
+    }
+}
+
+// 弹出窗口组件
+export  component popwindow  {
+    callback show_win ; // 显示窗口回调
+    in-out property <[string]> tags_title; // 标签标题
+    popup := PopupWindow {
+        popup2_content :=  Rectangle {
+            background: GlobalBasicSettings.theme-type.resizablepane-bg; // 弹出窗口背景
+            border-radius: 5px; // 圆角
+            VerticalLayout {
+                spacing: 5px;
+                for tab[id] in tags_title : VerticalLayout{
+                    width: 150px;
+                    tr := Rectangle {
+                        background: touch_i.has-hover? GlobalBasicSettings.theme-type.popwin-bg : transparent; // 根据触摸状态设置背景颜色
+                        border-radius: 5px; // 圆角
+                        height: 25px;
+                        padding: 0px;
+
+                        HorizontalBox {
+                            spacing: 0px;
+                            height: 25px;
+                            Text {
+                                text: tab; // 显示标签文本
+                                font-family: GlobalBasicSettings.default_font_family; // 字体
+                                font-size: 13px; // 字体大小
+                                vertical-alignment: center; // 垂直对齐
+                                color: GlobalBasicSettings.theme-type.font-color; // 文本颜色
+                            }
+                        }
+                        touch_i := TouchArea {
+                            clicked => {
+                                if (touch-i.pressed && touch-i.has-hover) {
+                                    if (tab == "Setting") {
+                                        GlobalBasicSettings.openwindow(); // 打开设置窗口
+                                    }
+                                    if (tab == "Payload Control") {
+                                        GlobalBasicSettings.add_tab(tab); // 添加Payload Control标签
+                                    }
+                                    if (tab == "Start Http_Proxy") {
+                                        GlobalBasicSettings.add_tab(tab); // 添加启动代理标签
+                                    }
+                                    
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    show_win => {
+        popup.show(); // 显示弹出窗口
+    }
+}
+
+// 侧边栏图标按钮组件
+export component SidebarIconButton inherits   Rectangle {
+    in-out property <image> image_init; // 初始图标
+    in-out property <image> image_hover; // 悬停图标
+    in-out property <image> right_icon; // 右侧图标
+    callback event_clicked(); // 点击事件回调
+    list2_m1:= Image {
+        source: sider2-ta.has-hover?image_hover:image_init; // 根据触摸状态设置图标
+        width: 25px;
+        height: 24px;
+        sider2_ta := TouchArea{
+            clicked => {
+                event_clicked(); // 点击时触发回调
+            }
+        }
+    }
+    @children // 子组件
+}
+
+// 侧边栏菜单按钮组件
+export component SidebarMenuButton inherits   Rectangle {
+    in-out property <[string]> tags_title; // 标签标题
+    in-out property <image> image_init:GlobalBasicSettings.theme-type.icon-list-init; // 初始图标
+    in-out property <image> image_hover:GlobalBasicSettings.theme-type.icon-list; // 悬停图标
+    list2_m1:= Image {
+        source: sider2-ta.has-hover?image_init :image_hover; // 根据触摸状态设置图标
+        width: 20px;
+        height: 24px;
+        sider2_ta := TouchArea{
+            clicked => {
+                popup2.show_win(); // 点击时显示弹出窗口
+            }
+        }
+    }
+    popup2 := popwindow {
+        tags_title: tags_title; // 弹出窗口标签标题
+        x: (list2_m1.x+self.width/2+list2-m1.width+7px); y: (list2_m1.y + self.height/2 - 20px*3); // 弹出窗口位置
+    }
+}
+
+// 侧边栏组件
+export component Sidebar inherits  Rectangle {
+    in-out  property <ContentType> contenttype: ContentType.Home; // 内容类型
+    border-bottom-left-radius: 10px; // 左下角圆角
+    width: 35px; // 宽度
+    background: GlobalBasicSettings.theme-type.sidebar-bg; // 背景颜色
+    padding: 0px; // 内边距
+    VerticalLayout {
+        spacing: 15px; // 间距
+        VerticalBox {
+            alignment: start;
+            spacing: 20px;
+            SidebarIconButton{
+                image_init:GlobalBasicSettings.theme-type.icon-home-init; // 初始图标
+                image_hover:GlobalBasicSettings.theme-type.icon-home; // 悬停图标
+                event_clicked => {
+                    root.contenttype = ContentType.Home; // 点击时切换到Home内容
+                }
+            }
+            SidebarIconButton{
+                image_init:GlobalBasicSettings.theme-type.icon-create-init; // 初始图标
+                image_hover:GlobalBasicSettings.theme-type.icon-create; // 悬停图标
+                event_clicked => {
+                    root.contenttype = ContentType.Create; // 点击时切换到Create内容
+                }
+            }
+        }
+        
+        VerticalBox {
+            alignment: end;
+            spacing: 20px;
+            padding-bottom: 30px;
+            SidebarIconButton{
+                image_init:GlobalBasicSettings.theme-type.icon-setting-init; // 初始图标
+                image_hover:GlobalBasicSettings.theme-type.icon-setting; // 悬停图标
+                event_clicked => {
+                    GlobalBasicSettings.openwindow(); // 点击时打开设置窗口
+                }
+            }
+            SidebarMenuButton{
+                tags_title: ["File","View",@tr("待更新")]; // 标签标题
+                image_init:GlobalBasicSettings.theme-type.icon-list-init; // 初始图标
+                image_hover:GlobalBasicSettings.theme-type.icon-list; // 悬停图标
+            }
+        }
+
+    }
+}
+
+// 基础侧边栏组件
+export component BaseSidebar inherits  Rectangle {
+    in-out  property <ContentType> contenttype: ContentType.Home; // 内容类型
+    border-bottom-left-radius: 10px; // 左下角圆角
+    width: 100px; // 宽度
+    background: GlobalBasicSettings.theme-type.sidebar-bg; // 背景颜色
+    padding: 0px; // 内边距
+}

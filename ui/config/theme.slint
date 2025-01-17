@@ -1,0 +1,121 @@
+export struct GlobalTheme {
+    titlemenu_bg: color,
+    resizablepane_bg: color,
+    resizablepane_content: color,
+    sidebar_bg: color,
+    title-bg-pressed-hashover: color,
+    icon-close:image,
+    icon-min:image,
+    icon-max:image,
+    icon-home-init:image,
+    icon-create-init:image,
+    icon-home:image,
+    icon-create:image,
+    icon-setting-init:image,
+    icon-setting:image,
+    icon-list-init:image,
+    icon-list:image,
+    icon-lower-bar:image,
+    icon-logo:image,
+    font-color:color,
+    popwin_bg:color,
+    home-bar: brush,
+    home-button: brush,
+    button-bgbar: brush,
+    ligth-dark:image,
+    
+}
+
+export global theme-dark{
+    in-out property <GlobalTheme> default_theme:{
+        titlemenu_bg:#232325,
+        resizablepane_bg: #272729,
+        resizablepane_content:#373739,
+        sidebar_bg:#232325,
+        title-bg-pressed-hashover:#48494c,
+        icon-close:@image-url("../resouces/icons/close.svg"),
+        icon-min: @image-url("../resouces/icons/minimize.png"),
+        icon-max:@image-url("../resouces/icons/maximize.png"),
+        icon-home-init:@image-url("../resouces/icons/home-init.png"),
+        icon-home:@image-url("../resouces/icons/home.png"),
+        icon-create-init:@image-url("../resouces/icons/create-init.png"),
+        icon-create:@image-url("../resouces/icons/create.png"),
+        icon-setting-init:@image-url("../resouces/icons/setting-init.png"),
+        icon-setting:@image-url("../resouces/icons/setting.png"),
+        icon-list-init:@image-url("../resouces/icons/list.png"),
+        icon-list:@image-url("../resouces/icons/list-hover.png"),
+        icon-lower-bar:@image-url("../resouces/icons/huojian_dark.png"),
+        icon-logo:@image-url("../resouces/icons/logo_dark.png"),
+        font-color:#FFFFFF,
+        popwin_bg:#53565b,
+        home-bar:@linear-gradient(
+            90deg,
+            #373739,
+            #838383e6 30%,
+            #838383e6  90%,
+            #373739,
+        ),
+        home-button:@linear-gradient(
+            90deg,
+            #6f6f6f,
+            #6b6b6c 30%,
+            #6b6b6c  90%,
+            #6f6f6f,
+        ),
+        button-bgbar:@linear-gradient(
+            90deg,
+            #4A90E200,
+            #ffffff 20%,
+            #ffffff 80%,
+            #4A90E200
+        ),
+        ligth-dark:@image-url("../resouces/icons/dark_ligth.png")
+    };
+}
+
+export global theme-ligth{
+    in-out property <GlobalTheme> default_theme:{
+        titlemenu_bg:#ffffff,
+        resizablepane_bg: #fbfbfbfb,
+        resizablepane_content:#fbfbfbfb,
+        sidebar_bg:#eeeeee,
+        title-bg-pressed-hashover:#DDDDDD,
+        icon-close:@image-url("../resouces/icons/close_ligth.png"),
+        icon-min: @image-url("../resouces/icons/minimize_ligth.png"),
+        icon-max:@image-url("../resouces/icons/maximize_ligth.png"),
+        icon-home-init:@image-url("../resouces/icons/home_ligth-init.png"),
+        icon-home:@image-url("../resouces/icons/home_ligth.png"),
+        icon-create-init:@image-url("../resouces/icons/create_ligth-init.png"),
+        icon-create:@image-url("../resouces/icons/create_ligth.png"),
+        icon-setting-init:@image-url("../resouces/icons/setting_ligth-init.png"),
+        icon-setting:@image-url("../resouces/icons/setting_ligth.png"),
+        icon-list-init:@image-url("../resouces/icons/list_ligth-init.png"),
+        icon-list:@image-url("../resouces/icons/list_ligth.png"),
+        icon-lower-bar:@image-url("../resouces/icons/huojian.png"),
+        icon-logo:@image-url("../resouces/icons/logo_ligth.png"),
+        font-color:#2F2F2F,
+        popwin_bg:#c4c5c6,
+        home-bar:@linear-gradient(
+            90deg,
+            #fbfbfbfb,
+            #e6e6e6e6 30%,
+            #e6e6e6e6 90%,
+            #fbfbfbfb,
+        ),
+        home-button:@linear-gradient(
+            90deg,
+            #fbfbfbfb,
+            #F0F0F0F0 30%,
+            #F0F0F0F0 90%,
+            #fbfbfbfb,
+        ),
+        button-bgbar:@linear-gradient(
+            90deg,
+            #4A90E200,
+            #3e6592 20%,
+            #3e6592 80%,
+            #4A90E200
+        ),
+        ligth-dark:@image-url("../resouces/icons/ligth_dark.png")
+    }; 
+}

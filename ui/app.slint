@@ -1,0 +1,58 @@
+import {BaseWindow,GlobalBasicSettings,BaseRectangle,ContentType} from "config/global.slint";
+import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import {Setting} from "componts/Setting.slint";
+import { titlemenu, Menu, ResizablePane, Sidebar } from "componts/BaseCompont.slint";
+import {LogViewer} from "componts/Log.slint";
+import { HomeView } from "componts/Home.slint";
+export {Setting,GlobalBasicSettings}
+
+export component App inherits BaseWindow {
+    no-frame: true;
+    in-out property <bool> fullscreen:false;
+    private property <ContentType> current-content: ContentType.None;
+    BaseRectangle {
+        VerticalLayout {
+            titlemenu{
+                closewindow => {
+                    root.closewindow()
+                }
+                maximize => {
+                    fullscreen=root.maximize_window();
+                }
+                minimize => {
+                    root.minimize_window();
+                    
+                }
+            }
+            HorizontalLayout {
+                spacing: 0px;
+                sidder := Sidebar{
+                    background: GlobalBasicSettings.theme-type.sidebar-bg;
+                }
+                Rectangle {
+                    ResizablePane {
+                        contenttype: sidder.contenttype;
+                        is_fullscreen: fullscreen;
+                        if (self.contenttype == ContentType.Home || self.contenttype == ContentType.None) : Rectangle {
+                            HomeView {
+                                border-radius: 10px;
+                                width: parent.width;
+                            }
+                        }
+                        if (self.contenttype == ContentType.Create) : Rectangle {
+                            Text {
+                                text: @tr("Create 功能区域");
+                                color: GlobalBasicSettings.theme-type.font-color;
+                            }
+                        }
+                    }
+                }
+
+            }
+
+        }  
+        
+    }
+}
+
+

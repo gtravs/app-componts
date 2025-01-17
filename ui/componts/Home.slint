@@ -1,0 +1,90 @@
+import {GlobalBasicSettings} from "../config/global.slint";
+import { VerticalBox } from "std-widgets.slint";
+import {HButton} from "BaseCompont.slint";
+
+
+export component homeButton inherits Rectangle {
+    in-out property <string> text_name;
+    in-out property <bool> is_active:false;
+    callback button_active();
+    Rectangle {
+        background: GlobalBasicSettings.theme-type.home-button;
+        border-radius: 10px;
+        max-width: 80px;
+        height: 30px;
+        VerticalBox {
+            alignment: center;
+            t:= Text {
+                horizontal-alignment: center;
+                text: text_name;
+                font-weight: 550;
+                color: GlobalBasicSettings.theme-type.font-color;
+                font-family: GlobalBasicSettings.default_font_family;
+            }
+            Rectangle {
+                x:t.x;
+                height: 1.5px;
+                max-width: 80px;
+                border-radius: 20px;
+                background: is_active ? 
+                    GlobalBasicSettings.theme-type.button-bgbar: transparent; // 激活时显示底部渐变条
+            }
+        }
+        homebutton_touch := TouchArea {
+            clicked => {
+                button_active();
+            }
+        }
+  
+    } 
+}
+export component HomeView inherits Rectangle {
+    in-out property <[string]> tags_title:[@tr("Connections Table"),@tr("Payload Generation"),@tr("Http/Https Proxy")];
+    in-out property <string> active_name:tags_title[0];
+    VerticalLayout {
+        spacing: 0px;
+        padding: 0px;
+        Rectangle {
+            height: 30px;
+            background: GlobalBasicSettings.theme-type.home-bar;
+            border-radius: 10px;
+            HorizontalLayout {
+                padding-left: 5px;
+                spacing: 10px;
+                alignment: start;
+                for hbtab[id] in tags_title : homeButton {
+                    text_name: hbtab;
+                    is_active: hbtab  == active_name ;
+                    button_active => {
+                        active_name = hbtab;
+                    }
+                }
+                
+            }
+        }
+        if(active_name == tags_title[0]) :Rectangle {
+            Text {
+                text: @tr("Connections Table 内容待实现...");
+                font-weight: 550;
+                color: GlobalBasicSettings.theme-type.font-color;
+                font-family: GlobalBasicSettings.default_font_family; 
+            }
+        }
+        if(active_name == tags_title[1]) :Rectangle {
+            Text {
+                text: @tr("Payload Generation 内容待实现...");
+                font-weight: 550;
+                color: GlobalBasicSettings.theme-type.font-color;
+                font-family: GlobalBasicSettings.default_font_family;
+            }
+        }
+        if(active_name == tags_title[2]) :Rectangle {
+            Text {
+                text: @tr("Http/Https Proxy 内容待实现...");
+                font-weight: 550;
+                color: GlobalBasicSettings.theme-type.font-color;
+                font-family: GlobalBasicSettings.default_font_family;
+            }
+        }
+    }
+}

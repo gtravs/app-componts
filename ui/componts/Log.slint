@@ -1,0 +1,81 @@
+import { BaseWindow, BaseRectangle,GlobalBasicSettings ,ContentType,LogEntry} from "../config/global.slint";
+import { HorizontalBox } from "std-widgets.slint";
+
+
+export component LogViewer inherits Rectangle {
+    in-out property <[LogEntry]> logs: [] ;
+    background: #2A2A2C;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 10px;
+    Flickable {
+        interactive: true;
+        logs-layout := VerticalLayout {
+            padding: 16px;
+            spacing: 8px;
+
+            for log[i] in  logs: Rectangle {
+                width: root.width;
+                VerticalLayout {
+                    spacing: 2px;
+
+                    // 日志条目
+                    Rectangle {
+                        //height: 20px;
+                        HorizontalLayout {
+                            width: root.width;
+                            
+                            spacing: 8px;
+                            // 时间戳列
+                            Text {
+                                max-width: 150px;
+                                text: log.timestamp;
+                                color: #888888;
+                                font-size: 13px;
+                                font-family: GlobalBasicSettings.default_font_family;
+                                vertical-alignment: top;  // 改为顶部对齐
+                            }
+                            // 级别列
+                            Text {
+                                max-width: 80px;
+                                text: "[" + log.level + "] >>>";
+                                color: log.level == "ERROR" ? #FF4444 :
+                                       log.level == "WARN" ? #FFA500 :
+                                       log.level == "INFO" ? #00FF00 : #FFFFFF;
+                                font-size: 13px;
+                                font-family: GlobalBasicSettings.default_font_family;
+                                vertical-alignment: top;  // 改为顶部对齐
+                            }
+                            Text {
+                                //x: 10px;
+                                text: log.message;
+                                color: #E5E5E5;
+                                font-size: 13px;
+                                font-family: GlobalBasicSettings.default_font_family;
+                                wrap: word-wrap;
+                                vertical-alignment: top;
+                            }
+
+                        }
+                    }
+
+
+                    // 分隔线
+                    Rectangle {
+                        height: 1px;
+                        width: parent.width;
+                        background: @radial-gradient(
+                            circle,
+                            #4A90E240 0%,
+                            #4A90E215 40%,
+                            transparent 70%
+                        );
+                        opacity: 0.5;
+                    }
+                }
+            }
+        }
+    }
+}
+
