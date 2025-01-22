@@ -1,6 +1,6 @@
 // 全局通用标题栏
-import { BaseWindow, BaseRectangle, GlobalBasicSettings, ContentType, LogEntry } from "../config/global.slint";
-import { HorizontalBox, VerticalBox, ListView, Button } from "std-widgets.slint";
+import { BaseWindow, BaseRectangle, GlobalBasicSettings, ContentType, EventLog ,ProxyLogEntry} from "../config/global.slint";
+import { HorizontalBox, VerticalBox, ListView, Button, StandardTableView } from "std-widgets.slint";
 import { LogViewer } from "Log.slint";
 import { theme-dark, theme-ligth } from "../config/theme.slint";
 
@@ -369,16 +369,17 @@ export component ResizablePane inherits Rectangle {
                                 if (GlobalBasicSettings.active_tab == "Payload Control") : hbutton_content{
                                     Text {text:"Payload Control";} // 显示Payload Control内容
                                 }
-                                if (GlobalBasicSettings.active_tab == "Start Http_Proxy") : hbutton_content{
-                                    Button {
-                                        text: "start proxy"; // 显示启动代理按钮
-                                        clicked => {
-                                            GlobalBasicSettings.handle_event(); // 点击时处理事件
-                                        }
-                                    }
-                                }
+                                // if (GlobalBasicSettings.active_tab == "start proxy") : hbutton_content{
+                                //     background: GlobalBasicSettings.theme-type.resizablepane_bg;
+                                //     Button {
+                                //         text: "start proxy"; // 显示启动代理按钮
+                                //         clicked => {
+                                //             GlobalBasicSettings.handle_event(); // 点击时处理事件
+                                //         }
+                                //     }
+                                // }
                                 if (GlobalBasicSettings.active_tab == "Event Log") : hbutton_content{
-                                    property <[LogEntry]> sample-logs :GlobalBasicSettings.logs; // 日志条目
+                                    property <[EventLog]> sample-logs :GlobalBasicSettings.logs; // 日志条目
                                     LogViewer {
                                         logs: sample-logs; // 显示日志查看器
                                     }
@@ -461,9 +462,9 @@ export  component popwindow  {
                                     if (tab == "Payload Control") {
                                         GlobalBasicSettings.add_tab(tab); // 添加Payload Control标签
                                     }
-                                    if (tab == "Start Http_Proxy") {
-                                        GlobalBasicSettings.add_tab(tab); // 添加启动代理标签
-                                    }
+                                    // if (tab == "start proxy") {
+                                    //     GlobalBasicSettings.add_tab(tab); // 添加启动代理标签
+                                    // }
                                     
                                 }
 
@@ -516,6 +517,7 @@ export component SidebarMenuButton inherits   Rectangle {
     popup2 := popwindow {
         tags_title: tags_title; // 弹出窗口标签标题
         x: (list2_m1.x+self.width/2+list2-m1.width+7px); y: (list2_m1.y + self.height/2 - 20px*3); // 弹出窗口位置
+
     }
 }
 
@@ -563,6 +565,7 @@ export component Sidebar inherits  Rectangle {
                 image_init:GlobalBasicSettings.theme-type.icon-list-init; // 初始图标
                 image_hover:GlobalBasicSettings.theme-type.icon-list; // 悬停图标
             }
+
         }
 
     }
@@ -575,4 +578,206 @@ export component BaseSidebar inherits  Rectangle {
     width: 100px; // 宽度
     background: GlobalBasicSettings.theme-type.sidebar-bg; // 背景颜色
     padding: 0px; // 内边距
+}
+
+
+export component BaseTable  inherits Rectangle {
+    background: GlobalBasicSettings.theme-type.resizablepane-content;
+    in-out property <[string]> columns;
+    in-out property <[ProxyLogEntry]> rows;
+
+    private property <length> drag-start-x;
+    private property <length> original-width;
+    private property <length> delta;
+    private property <length> default-column-width: self.width / max(1, columns.length);
+    private property <int> current-col: -1;
+    private property <[length]> column-widths: GlobalBasicSettings.create_array(columns.length,default-column-width);
+    in-out property <int> current-row: -1;
+    VerticalLayout {
+        alignment:start;
+        header :=  Rectangle {
+            height: 30px;
+            background: GlobalBasicSettings.theme-type.resizablepane-content;
+            HorizontalLayout {
+                spacing: 1px;
+                padding: 5px;
+                for column[index] in  columns : col := Rectangle{
+                    preferred-width: column-widths[index];
+                    HorizontalBox {
+                        padding-left: 5px;
+                        padding-right: 5px;
+                        context:= Text {
+                            vertical-alignment: center;
+                            text: column;
+                            font-size: 13px;
+                            font-weight: 550;
+                            color: GlobalBasicSettings.theme-type.font-color;
+                            font-family: GlobalBasicSettings.default_font_family; 
+                        }
+
+                    }
+                    Rectangle {
+                        x:context.width+1px;
+                        background: #4f4a4add;
+                        width: 2px;
+                        bart := TouchArea {
+                            pointer-event(event) => {
+                                drag-start-x = self.pressed-x;
+                                original-width = col.width;
+                                current-col = index;
+                            }
+                            moved => {
+                                if (self.pressed) {
+                                    delta = self.mouse-x - drag-start-x;
+                                    column-widths[current-col] = original-width+ delta;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+list_view := ListView {
+    height: 600px;
+    for row[row-index] in rows : Rectangle {
+        background: {
+            if (row-index == current-row || (row-mouse-area.has-hover && row-mouse-area.pressed)) {
+                // 当前选中行
+                #678cd5 // 明亮的蓝色
+            } else if (row-mouse-area.has-hover) {
+                // 悬停状态
+                #3b82f620 // 淡蓝色，半透明
+            } else {
+                // 默认状态
+                GlobalBasicSettings.theme-type.resizablepane-content
+            }
+        }
+        height: 30px;
+        HorizontalLayout {
+            spacing: 1px;
+            padding: 5px;
+            Rectangle {
+                preferred-width: 150px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.timestamp;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+            Rectangle {
+                preferred-width: 100px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.id;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+            Rectangle {
+                preferred-width: 150px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.host;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+            Rectangle {
+                preferred-width: 80px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.method;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+            Rectangle {
+                preferred-width: 200px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.url;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+            Rectangle {
+                preferred-width: 80px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.status_code;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+            Rectangle {
+                preferred-width: 80px;
+                HorizontalBox {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                    Text {
+                        horizontal-alignment: left;
+                        vertical-alignment: center;
+                        text: row.length;
+                        font-size: 13px;
+                        font-weight: 550;
+                        color: GlobalBasicSettings.theme-type.font-color;
+                        font-family: GlobalBasicSettings.default_font_family;
+                    }
+                }
+            }
+        }
+        row-mouse-area := TouchArea {
+            clicked => {
+                current-row = row-index;
+                // 可以在这里添加点击行的其他处理逻辑
+            }
+        }
+    }
+    }
+    }
+    
 }

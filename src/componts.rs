@@ -3,15 +3,20 @@
 #![allow(unused_parens)]
 #![allow(dead_code)]
 #![allow(unused_imports)]
+use tokio::sync::broadcast;
+use std::sync::atomic::Ordering;
+use std::sync::atomic::AtomicBool;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use i_slint_backend_winit::{WinitWindowAccessor, WinitWindowEventResult};
 use slint::{ComponentHandle, Global, Model, ModelRc, PhysicalPosition, SharedString, SharedVector, VecModel};
 use winit::event::{ElementState, MouseButton, WindowEvent};
-use crate::{backend, info, App, Setting};
+use crate::backend::proxy::ca_cert::{generate_ca_certificate,install_ca_certificate,is_cert_installed};
+use crate::{backend, App, Setting};
 use crate::slint_generatedApp::{self, GlobalBasicSettings};
+use rfd::FileDialog;
 
-
-pub fn init_window_controls<T1,T2>(app: &T1, setting: &T2)
+pub  fn init_window_controls<T1,T2>(app: &T1, setting: &T2)
 where
     T1: ComponentHandle  + 'static,
     T2: ComponentHandle  + 'static,
@@ -35,6 +40,8 @@ where
     minimize_windows(&setting_weak);
     close_windows(&app_weak, true);
     close_windows(&setting_weak, false);
+    create_array(&app_weak);
+    install_cert(&app_weak);
 
 
     let window_weak = app.as_weak();
@@ -189,20 +196,50 @@ where
 }
 
 
+static PROXY_RUNNING: AtomicBool = AtomicBool::new(false);
+static mut SHUTDOWN_SENDER: Option<broadcast::Sender<()>> = None;
+
 pub fn handle_event<'a, T1: ComponentHandle + 'static>(window: &'a T1) 
 where
     GlobalBasicSettings<'a>: slint::Global<'a,T1>
 {
     let global_settings = window.global::<GlobalBasicSettings>();
     let window_weak = window.as_weak();
-    global_settings.on_handle_event(move || {
-        std::thread::spawn(|| {
-            let rt =   tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async  {
-                backend::proxy::http_proxy::run().await;
-            })
+    global_settings.on_handle_event(move |host:SharedString,port:SharedString| {
+        if PROXY_RUNNING.load(Ordering::SeqCst) {
+            // 停止代理
+            PROXY_RUNNING.store(false, Ordering::SeqCst);
+            unsafe {
+                if let Some(sender) = &SHUTDOWN_SENDER {
+                    let _ = sender.send(());
+                }
+            }
 
-        });
+        } 
+        else {
+            // 启动代理
+            PROXY_RUNNING.store(true, Ordering::SeqCst);
+            let (tx, _) = broadcast::channel(1);
+            unsafe {
+                SHUTDOWN_SENDER = Some(tx.clone());
+            }
+
+            std::thread::spawn(move || {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(async {
+                    if let Err(e) = backend::proxy::http_proxy::entry(tx,host.to_string(),port.to_string()).await {
+                        eprintln!("Proxy error: {}", e);
+                    }
+                });
+            });
+        }
+        // std::thread::spawn(|| {
+        //     let rt =   tokio::runtime::Runtime::new().unwrap();
+        //     rt.block_on(async  {
+        //         backend::proxy::http_proxy::entry().await;
+        //     })
+
+        // });
     });
 }
 
@@ -265,6 +302,51 @@ where
     // 使用 VecModel
     let vec_model = std::rc::Rc::new(VecModel::from(tabs_vec));
     global_settings.set_visible_tabs(vec_model.into());
+}
+
+
+pub fn create_array<'a, T1: ComponentHandle + 'static>(window: &'a T1)
+where
+    GlobalBasicSettings<'a>: slint::Global<'a,T1>  
+{
+    let global_settings = window.global::<GlobalBasicSettings>();
+    let window_weak = window.as_weak();
+
+    global_settings.on_create_array(move |lt:i32,s:f32| {
+        let array = vec![s;lt as usize];
+        Rc::new(VecModel::from(array)).into()
+    });
+}
+
+pub  fn install_cert<'a, T1: ComponentHandle + 'static>(window: &'a T1)
+where
+    GlobalBasicSettings<'a>: slint::Global<'a,T1>  
+{
+    let global_settings = window.global::<GlobalBasicSettings>();
+    let window_weak = window.as_weak();
+    global_settings.on_install_cert(move || {
+        tokio::spawn(async move {
+            if  let Ok(cacert) = generate_ca_certificate().await {
+                // 获取证书和私钥的 PEM 格式
+                let cert_chain = cacert.cert;
+                let private_key = cacert.key_pair;
+                // 保存证书
+                if let Some(cert_path) = FileDialog::new()
+                .set_title("保存证书文件")
+                .set_file_name("ca.crt")
+                .add_filter("证书文件", &["crt", "pem"])
+                .save_file() 
+            {
+    
+                if let Err(e) = std::fs::write(&cert_path, cert_chain.pem()) {
+                    println!("保存证书失败: {}", e);
+                    return;
+                }
+                println!("证书已保存到: {}", cert_path.display());
+            }}
+        });
+    });
+
 }
 
 

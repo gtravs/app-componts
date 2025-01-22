@@ -1,6 +1,6 @@
 import {GlobalBasicSettings} from "../config/global.slint";
-import { VerticalBox } from "std-widgets.slint";
-import {HButton} from "BaseCompont.slint";
+import { VerticalBox, Button, HorizontalBox } from "std-widgets.slint";
+import {HButton, BaseTable} from "BaseCompont.slint";
 
 
 export component homeButton inherits Rectangle {
@@ -35,11 +35,10 @@ export component homeButton inherits Rectangle {
                 button_active();
             }
         }
-  
     } 
 }
 export component HomeView inherits Rectangle {
-    in-out property <[string]> tags_title:[@tr("Connections Table"),@tr("Payload Generation"),@tr("Http/Https Proxy")];
+    in-out property <[string]> tags_title:[@tr("Connections Table"),@tr("Payload Generation"),@tr("Http Proxy"),@tr("Web Scan")];
     in-out property <string> active_name:tags_title[0];
     VerticalLayout {
         spacing: 0px;
@@ -78,9 +77,100 @@ export component HomeView inherits Rectangle {
                 font-family: GlobalBasicSettings.default_font_family;
             }
         }
+
         if(active_name == tags_title[2]) :Rectangle {
+            private property <bool> bt:false;
+            VerticalLayout {
+                alignment: start;
+                Rectangle {
+                    height: 25px;
+                    background: #4a4a4a;
+                    HorizontalLayout {
+                        spacing: 5px;
+                        HorizontalBox {
+                            //border-color: #ffff;
+                            TextInput {
+                                vertical-alignment: center;
+                                
+                                width: 150px;
+                                text <=> GlobalBasicSettings.host;
+                                font-weight: 550;
+                                //color: GlobalBasicSettings.theme-type.font-color;
+                                font-family: GlobalBasicSettings.default_font_family;
+                            }
+                            Text {
+                                vertical-alignment: center;
+                                horizontal-alignment: left;
+                                text: ":";
+                                //color: GlobalBasicSettings.theme-type.font-color;
+                                font-family: GlobalBasicSettings.default_font_family;
+                            }
+                            TextInput {
+                                width: 60px;
+                                vertical-alignment: center;
+                                horizontal-alignment: left;
+                                text <=> GlobalBasicSettings.port;
+                                font-weight: 550;
+                                //color: GlobalBasicSettings.theme-type.font-color;
+                                font-family: GlobalBasicSettings.default_font_family;
+                            }
+                        }
+                        // alignment: end;
+                        // spacing: 5px;
+                        Rectangle {
+                            horizontal-stretch: 1; 
+                        }
+
+                        Rectangle {
+                            Button{
+                                height: 25px;
+                                text: "安装证书";
+                                clicked => {
+                                    GlobalBasicSettings.install_cert();
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Button{
+                                height: 25px;
+                                text: "清理数据";
+                                clicked => {
+                                    GlobalBasicSettings.clear_proxy_logs();
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            background: bt?#018333:#912d3f;
+                            Button{
+                                height: 25px;
+                                text: bt ? "停止代理":"启动代理";
+                                clicked => {
+                                    GlobalBasicSettings.handle_event(GlobalBasicSettings.host,GlobalBasicSettings.port);
+                                    if (self.pressed) {
+                                        if(bt==false) {
+                                            bt = true;
+                                        } else {
+                                            bt = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+                BaseTable {
+                    columns: ["Time","ID","Host","Method","URL","Status","Length"];
+                    rows:GlobalBasicSettings.proxy_logs;
+                }
+            }
+        }
+
+        if(active_name == tags_title[3]) :Rectangle {
             Text {
-                text: @tr("Http/Https Proxy 内容待实现...");
+                text: @tr("Web Scan 内容待实现...");
                 font-weight: 550;
                 color: GlobalBasicSettings.theme-type.font-color;
                 font-family: GlobalBasicSettings.default_font_family;

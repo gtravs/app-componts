@@ -1,9 +1,21 @@
 import { theme-dark,theme-ligth,GlobalTheme } from "./theme.slint";
-export struct LogEntry {
+export struct EventLog {
     timestamp: string,
     level: string,
     message: string,
 }
+
+export struct ProxyLogEntry {
+    timestamp: string,
+    id: string,
+    host: string,
+    method: string,
+    url: string,
+    status_code: string,
+    length: string,
+}
+
+
 
 
 
@@ -13,10 +25,17 @@ export global GlobalBasicSettings {
     callback openwindow();
     callback maximize_window() -> bool;
     callback minimize_window();
-    callback handle_event();
+    callback handle_event(string,string);
     callback ligth_dark();
-    in-out property <[LogEntry]> logs;
-    callback get_logs() -> [LogEntry];
+    callback clear_proxy_logs();
+    callback install_cert();
+    pure callback create_array(int,length) -> [length];
+    in-out property <[ProxyLogEntry]> proxy_logs: [];
+    callback get_proxy_log() -> [ProxyLogEntry];
+    in-out property <[EventLog]> logs;
+    callback get_logs() -> [EventLog];
+    in-out property <string> host: "127.0.0.1";
+    in-out property <string> port: 9990;
     // 窗口基础设置
     out property <string> title:"Gtrat2";
     out property <length> default-width: 1000px;
@@ -62,13 +81,12 @@ export component BaseWindow inherits Window {
     callback openwindow();
     callback maximize_window() -> bool;
     callback minimize_window();
-    
+    callback create_array(int,length) -> [length];
     // 默认实现
     minimize_window => {GlobalBasicSettings.minimize_window()}
     maximize_window => {  GlobalBasicSettings.maximize_window() }
     closewindow => { GlobalBasicSettings.closewindow(); }
     openwindow => { GlobalBasicSettings.openwindow(); }
-    
 
 }
 

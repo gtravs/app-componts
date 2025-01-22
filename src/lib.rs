@@ -3,13 +3,13 @@ pub mod componts;
 pub mod backend;
 slint::include_modules!();
 
-use logs::{LogSystem, LogLevel};
+use std::sync::Arc;
+
+use logs::http_proxylogs::{LogManager, LogSystem, GLOBAL_LOG_MANAGER};
 use slint::{ComponentHandle, Global};
 use tokio::time::Duration;
 
 pub use slint_generatedApp::*; 
-
-
 
 // 通用的应用初始化函数
 pub async fn initialize_application<T1,T2>(
@@ -32,15 +32,22 @@ where
     componts::init_window_controls(&main_weak, &setting_weak);
 
     // 初始化日志系统
-    let (_log_manager, _log_system) = LogSystem::new(
+    let log_system= LogSystem::new(
         &main_window,
         max_logs,
         batch_size,
-        update_interval
+        update_interval,
+
     );
-
-    info!("[+] application launch");
-
+    // info!(
+    //     "REQ001",
+    //     "example.com",
+    //     "GET",
+    //     "/api/users",
+    //     "200",
+    //     "1024"
+    // );
+    // info!("[+] application launch");
     // 运行主窗口
     main_window.run()?;
 
