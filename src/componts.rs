@@ -12,6 +12,8 @@ use i_slint_backend_winit::{WinitWindowAccessor, WinitWindowEventResult};
 use slint::{ComponentHandle, Global, Model, ModelRc, PhysicalPosition, SharedString, SharedVector, VecModel};
 use winit::event::{ElementState, MouseButton, WindowEvent};
 use crate::backend::proxy::ca_cert::{generate_ca_certificate,install_ca_certificate,is_cert_installed};
+use crate::event_error;
+use crate::event_info;
 use crate::{backend, App, Setting};
 use crate::slint_generatedApp::{self, GlobalBasicSettings};
 use rfd::FileDialog;
@@ -337,12 +339,11 @@ where
                 .add_filter("证书文件", &["crt", "pem"])
                 .save_file() 
             {
-    
                 if let Err(e) = std::fs::write(&cert_path, cert_chain.pem()) {
-                    println!("保存证书失败: {}", e);
+                    event_error!(format!("保存证书失败: {}",e));
                     return;
                 }
-                println!("证书已保存到: {}", cert_path.display());
+                event_info!(format!("证书已保存到: {}",cert_path.display()));
             }}
         });
     });

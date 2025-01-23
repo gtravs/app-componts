@@ -8,7 +8,7 @@ use super::session::{Session};
 use std::time::Duration;
 use tokio::{io::{copy_bidirectional, AsyncReadExt, AsyncWriteExt}, net::TcpStream, sync::Mutex, time::sleep};
 use tokio_rustls::{TlsAcceptor, TlsConnector};
-use crate::ProxyLogEntry;
+use crate::{event_info, ProxyLogEntry};
 use crate::proxy_info;
 use tokio::sync::broadcast;
 // mod prelude;
@@ -22,7 +22,7 @@ use tokio::sync::broadcast;
 async fn set_proxy_port(host: String, port: String) -> Result<tokio::net::TcpListener, anyhow::Error> {
     let addr = format!("{}:{}", host, port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
-    println!("[+] Listening on {}\n", &*addr);
+    event_info!(format!("[+] Listening on {}\n",addr));
     Ok(listener)
 }
 
@@ -90,12 +90,12 @@ pub async fn entry(shutdown_tx: broadcast::Sender<()>,proxy_host:String,proxy_po
                 }
             }
             _ = rx.recv() => {
-                println!("Shutdown signal received, closing all connections...");
+                event_info!("Shutdown signal received, closing all connections...");
                 // 等待所有活动连接完成
                 for handle in active_connections {
                     let _ = handle.await;
                 }
-                println!("All connections closed");
+                event_info!("All connections closed");
                 return Ok(());
             }
         }

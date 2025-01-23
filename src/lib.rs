@@ -3,9 +3,8 @@ pub mod componts;
 pub mod backend;
 slint::include_modules!();
 
-use std::sync::Arc;
 
-use logs::http_proxylogs::{LogManager, LogSystem, GLOBAL_LOG_MANAGER};
+use logs::{event_log::EventLogSystem, http_proxylogs::ProxyLogSystem, logs::LogSystem};
 use slint::{ComponentHandle, Global};
 use tokio::time::Duration;
 
@@ -32,23 +31,22 @@ where
     componts::init_window_controls(&main_weak, &setting_weak);
 
     // 初始化日志系统
-    let log_system= LogSystem::new(
+    let httproxy_system= ProxyLogSystem::new(
         &main_window,
         max_logs,
         batch_size,
         update_interval,
 
     );
-    // info!(
-    //     "REQ001",
-    //     "example.com",
-    //     "GET",
-    //     "/api/users",
-    //     "200",
-    //     "1024"
-    // );
-    // info!("[+] application launch");
-    // 运行主窗口
+
+    let event_system = EventLogSystem::new(
+        &main_window,
+        max_logs,
+        batch_size,
+        update_interval,
+    );
+
+    event_info!("APP RUNNING...");
     main_window.run()?;
 
     Ok(())

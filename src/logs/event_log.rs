@@ -15,7 +15,7 @@ use crate::slint_generatedApp::{self, GlobalBasicSettings};
 use encoding_rs::{Encoding, UTF_8, GBK, GB18030};
 
 use super::logs::{LogManager, LogStorage, LogSystem};
-use super::logs_struct::ProxyLogEntry;
+use super::logs_struct::EventLog;
 
 
 /*
@@ -23,20 +23,20 @@ use super::logs_struct::ProxyLogEntry;
     -  日志管理器: LogManger
 */
 
-pub static  GLOBAL_PROXY_MANAGER:OnceCell<Arc<ProxyLogManager>> = OnceCell::new();
-pub fn get_log_manager() -> Option<Arc<ProxyLogManager>> {
-    GLOBAL_PROXY_MANAGER.get().cloned()
+pub static  GLOBAL_EVENT_MANAGER:OnceCell<Arc<EventLogManager>> = OnceCell::new();
+pub fn get_log_manager() -> Option<Arc<EventLogManager>> {
+    GLOBAL_EVENT_MANAGER.get().cloned()
 }
 
 // 日志管理器
 #[derive(Clone)]
-pub struct ProxyLogManager {
-    sender : mpsc::Sender<ProxyLogEntry>
+pub struct EventLogManager {
+    sender : mpsc::Sender<EventLog>
 }
 
-impl LogManager for ProxyLogManager {
-    type Entry = ProxyLogEntry;
-    fn new(sender: mpsc::Sender<ProxyLogEntry>) -> Self {
+impl LogManager for EventLogManager {
+    type Entry = EventLog;
+    fn new(sender: mpsc::Sender<EventLog>) -> Self {
         Self{
             sender
         }
@@ -55,12 +55,12 @@ impl LogManager for ProxyLogManager {
 
 
 #[derive(Clone)]
-pub struct ProxyLogStorage {
-    entries: Vec<ProxyLogEntry>
+pub struct EventLogStorage {
+    entries: Vec<EventLog>
 }
 
-impl LogStorage for ProxyLogStorage {
-    type Entry = ProxyLogEntry;
+impl LogStorage for EventLogStorage {
+    type Entry = EventLog;
     fn new() -> Self  where Self: Sized {
         Self {
             entries: Vec::new()
@@ -77,24 +77,24 @@ impl LogStorage for ProxyLogStorage {
 }
 
 // 日志系统
-pub struct ProxyLogSystem<T1>
+pub struct EventLogSystem<T1>
 where 
     T1: ComponentHandle  + 'static,
 {
     pub window: Weak<T1>,
-   pub sender: mpsc::Sender<ProxyLogEntry>,
+   pub sender: mpsc::Sender<EventLog>,
    pub max_logs: usize,
    pub batch_size: usize,
    pub update_interval: Duration,
-   pub storage: Arc<Mutex<ProxyLogStorage>>,
+   pub storage: Arc<Mutex<EventLogStorage>>,
 }
 
-impl<T1>LogSystem<T1> for ProxyLogSystem<T1>
+impl<T1>LogSystem<T1> for EventLogSystem<T1>
 where 
     T1: ComponentHandle  + 'static,
     for<'a> GlobalBasicSettings<'a>: Global<'a, T1>,
 {
-    type Entry =  ProxyLogEntry;
+    type Entry =  EventLog;
 
     fn new(
         window: &T1,
@@ -103,9 +103,9 @@ where
         update_interval: Duration
     ) -> Self {
         let (sender, mut receiver) = mpsc::channel(1000);
-        let storage = Arc::new(Mutex::new(ProxyLogStorage::new()));
-        let log_manager = Arc::new(ProxyLogManager::new(sender.clone()));
-        GLOBAL_PROXY_MANAGER.set(log_manager.clone()).ok();
+        let storage = Arc::new(Mutex::new(EventLogStorage::new()));
+        let log_manager = Arc::new(EventLogManager::new(sender.clone()));
+        GLOBAL_EVENT_MANAGER.set(log_manager.clone()).ok();
 
         Self::init_ui_model(window);
         let st = Arc::clone(&storage);
@@ -153,7 +153,7 @@ where
         let global_settings = window.global::<GlobalBasicSettings>();
         let model= VecModel::default();
         let model_rc = ModelRc::new(model);
-        global_settings.set_proxy_logs(model_rc);  
+        global_settings.set_logs(model_rc);  
     }
 
     fn spawn_log_handler(mut receiver: mpsc::Receiver<Self::Entry>,storage: Arc<Mutex<dyn LogStorage<Entry = Self::Entry>>>,window_weak: Weak<T1>,max_logs: usize)  {
@@ -161,7 +161,7 @@ where
             async move {
                     //println!("recv data.");
                     while let Some(entry) = receiver.recv().await {
-                        let entries_to_display:Vec<ProxyLogEntry> = {
+                        let entries_to_display:Vec<EventLog> = {
                             let mut storage = storage.lock().unwrap();
                             storage.add_entry(entry, max_logs);
                             storage.get_entries().clone()
@@ -181,12 +181,12 @@ where
                 let global_settings = window.global::<GlobalBasicSettings>();
                 let model= VecModel::default();
                 for entry in entries {
-                    let slint_entry = slint_generatedApp::ProxyLogEntry::from(entry);
+                    let slint_entry = slint_generatedApp::EventLog::from(entry);
                     model.push(slint_entry);
                 }
 
                 let model_rc = ModelRc::new(model);
-                global_settings.set_proxy_logs(model_rc); 
+                global_settings.set_logs(model_rc); 
             }
         }).ok();
     }
@@ -194,7 +194,7 @@ where
     fn setup_clear_callback(window: &T1, storage: Arc<Mutex<dyn LogStorage<Entry = Self::Entry>>>) {
         let window_weak = window.as_weak();
         let global_settings = window.global::<GlobalBasicSettings>();
-        global_settings.on_clear_proxy_logs(move || {
+        global_settings.on_clear_logs(move || {
             // 清空存储的日志
             if let Ok(mut storage) = storage.lock() {
                 storage.get_entries_mut().clear();
@@ -212,17 +212,13 @@ where
 }
 
 #[macro_export]
-macro_rules! proxy_log {
-    ($id:expr, $host:expr, $method:expr, $url:expr, $status:expr, $length:expr) => {
-        if let Some(logger) = crate::logs::http_proxylogs::get_log_manager() {
-            let entry = crate::logs::logs_struct::ProxyLogEntry {
+macro_rules! event_log {
+    ($level:expr, $message:expr) => {
+        if let Some(logger) = crate::logs::event_log::get_log_manager() {
+            let entry = crate::logs::logs_struct::EventLog {
+                level: $level.into(),
+                message: $message.into(),
                 timestamp: chrono::Local::now().format("%Y-%m-%d %H:%M").to_string().into(),
-                id: $id.into(),
-                host: $host.into(),
-                method: $method.into(),
-                url: $url.into(),
-                status_code: $status.into(),
-                length: $length.into(),
             };
             let logger = logger.clone();
             tokio::spawn(async move {
@@ -234,15 +230,23 @@ macro_rules! proxy_log {
 }
 
 #[macro_export]
-macro_rules! proxy_info {
-    ($id:expr, $host:expr, $method:expr, $url:expr, $status:expr, $length:expr) => {
-        $crate::proxy_log!(
-            $id,
-            $host,
-            $method,
-            $url,
-            $status,
-            $length
+macro_rules! event_info {
+    ($message:expr) => { 
+        $crate::event_log!(
+            "INFO",
+            $message
+        )
+    };
+}
+
+
+
+#[macro_export]
+macro_rules! event_error {
+    ($message:expr) => { 
+        $crate::event_log!(
+            "ERROR",
+            $message
         )
     };
 }

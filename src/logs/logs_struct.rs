@@ -2,59 +2,56 @@ use std::fmt::Debug;
 
 use slint::SharedString;
 
+use crate::slint_generatedApp;
 
-// 多组件日志数据结构
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum LogTarget {
-    EventLog,
-    ProxyLog,
-    Custom(String)
-}
+use super::logs::LogEntry;
 
-pub trait LogEntry: Default+Clone+Debug+Send+'static {
-    fn get_timestamp(&self) -> String;
-    fn get_level(&self) -> String;
-    fn to_string_fmt(&self) -> String;
-}
 
 
 // 代理日志格式
-// #[derive(Clone, Debug,Default)]
-// pub struct ProxyLogEntry {
-//     pub timestamp: SharedString,
-//     pub level: SharedString,
-//     pub id: SharedString,
-//     pub host: SharedString,
-//     pub method: SharedString,
-//     pub url: SharedString,
-//     pub status_code: SharedString,
-//     pub length: SharedString,
-// }
+#[derive(Clone, Debug,Default)]
+pub struct ProxyLogEntry {
+    pub timestamp: SharedString,
+    pub id: SharedString,
+    pub host: SharedString,
+    pub method: SharedString,
+    pub url: SharedString,
+    pub status_code: SharedString,
+    pub length: SharedString,
+}
+impl From<super::logs_struct::ProxyLogEntry> for slint_generatedApp::ProxyLogEntry {
+    fn from(entry: super::logs_struct::ProxyLogEntry) -> Self {
+        slint_generatedApp::ProxyLogEntry {
+            timestamp: entry.timestamp.into(),
+            id: entry.id.into(),
+            host: entry.host.into(),
+            method: entry.method.into(),
+            url: entry.url.into(),
+            status_code: entry.status_code.into(),
+            length: entry.length.into()
+        }
+    }
+}
+impl LogEntry for ProxyLogEntry {}
 
-// impl LogEntry for ProxyLogEntry {
-//     fn get_timestamp(&self) -> String {
-//         (&self.timestamp).to_string()
-//     }
 
-//     fn get_level(&self) -> String {
-//         (&self.level).to_string()
-//     }
-
-//     fn to_string_fmt(&self) -> String {
-//         format!("[{}] {} - {} {} {} - Status: {} Length: {}",
-//         self.timestamp, self.level, self.host,
-//         self.method, self.url, self.status_code,
-//         self.length
-//     )
-//     }
-// }
 // 通用日志格式
-// #[derive(Clone, Debug,Default)]
-// pub struct EventLog {
-//     pub level: SharedString,
-//     pub message: SharedString,
-//     pub timestamp: SharedString,
-// }
+#[derive(Clone, Debug,Default)]
+pub struct EventLog {
+    pub level: SharedString,
+    pub message: SharedString,
+    pub timestamp: SharedString,
+}
+impl From<super::logs_struct::EventLog> for slint_generatedApp::EventLog {
+    fn from(entry: super::logs_struct::EventLog) -> Self {
+        slint_generatedApp::EventLog {
+            level: entry.level.into(),
+            message: entry.message.into(),
+            timestamp: entry.timestamp.into(),
+        }
+    }
+}
+impl LogEntry for EventLog {}
 
 // impl LogEntry for EventLog {
 //     fn get_timestamp(&self) -> String {
@@ -75,21 +72,21 @@ pub trait LogEntry: Default+Clone+Debug+Send+'static {
 
 
 
-#[derive(Clone, Debug)]
-pub enum LogLevel {
-    Debug,
-    Info,
-    Warning,
-    Error,
-}
+// #[derive(Clone, Debug)]
+// pub enum LogLevel {
+//     Debug,
+//     Info,
+//     Warning,
+//     Error,
+// }
 
-impl LogLevel {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            LogLevel::Debug => "DEBUG",
-            LogLevel::Info => "INFO",
-            LogLevel::Warning => "WARN",
-            LogLevel::Error => "ERROR",
-        }
-    }
-}
+// impl LogLevel {
+//     pub fn as_str(&self) -> &'static str {
+//         match self {
+//             LogLevel::Debug => "DEBUG",
+//             LogLevel::Info => "INFO",
+//             LogLevel::Warning => "WARN",
+//             LogLevel::Error => "ERROR",
+//         }
+//     }
+// }

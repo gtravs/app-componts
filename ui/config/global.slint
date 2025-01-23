@@ -28,6 +28,7 @@ export global GlobalBasicSettings {
     callback handle_event(string,string);
     callback ligth_dark();
     callback clear_proxy_logs();
+    callback clear_logs();
     callback install_cert();
     pure callback create_array(int,length) -> [length];
     in-out property <[ProxyLogEntry]> proxy_logs: [];
